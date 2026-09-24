@@ -1,3 +1,4 @@
+from langchain_core.documents import Document
 from typing import List, Any
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
@@ -10,7 +11,7 @@ class EmbeddingPipeline:
         self.model = SentenceTransformer(model_name)
         print(f"[INFO] Loaded embedding model: {model_name}")
 
-    def chunk_documents(self, documents: List[Any]) -> List[Any]:
+    def chunk_documents(self, documents: List[Any]) -> List[Document]:
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
@@ -21,7 +22,7 @@ class EmbeddingPipeline:
         print(f"[INFO] Split {len(documents)} documents into {len(chunks)} chunks.")
         return chunks
 
-    def embed_chunks(self, chunks: List[Any]) -> np.ndarray:
+    def embed_chunks(self, chunks: List[Document]) -> np.ndarray:
         texts = [chunk.page_content for chunk in chunks]
         print(f"[INFO] Generating embeddings for {len(texts)} chunks...")
         embeddings = self.model.encode(texts, show_progress_bar=True)

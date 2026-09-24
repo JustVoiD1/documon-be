@@ -6,12 +6,12 @@ dist/
 wheels/
 *.egg-info
 
-
 documents
 
 faiss_store
 
 # Virtual environments
 .venv
+database.ini
 .env*
 !.env.example

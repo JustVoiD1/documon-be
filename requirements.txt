@@ -8,6 +8,7 @@ langchain-text-splitters
 faiss-cpu
 chromadb
 langchain-groq
+langchain-google-genai
 python-dotenv
 typesense
 pgvector
@@ -16,3 +17,8 @@ ipykernel
 uvicorn[standard]
 
 pydantic
+
+psycopg2
+boto3
+pgvector
+python-multipart
