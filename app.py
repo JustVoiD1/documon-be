@@ -206,16 +206,16 @@ async def upload_document(
     doc_type = ext.lstrip(".") if ext else "unknown"
 
     parsed_chat_id: Optional[UUID] = None
-    if chat_id and str(chat_id).strip() not in ("", "null", "undefined", "None"):
+    if chat_id and chat_id.strip() not in ("", "null", "undefined", "None"):
         try:
-            parsed_chat_id = UUID(str(chat_id).strip())
+            parsed_chat_id = UUID(chat_id.strip())
         except ValueError:
             parsed_chat_id = None
 
     parsed_uploaded_by: Optional[UUID] = None
-    if uploaded_by and str(uploaded_by).strip() not in ("", "null", "undefined", "None"):
+    if uploaded_by and uploaded_by.strip() not in ("", "null", "undefined", "None"):
         try:
-            parsed_uploaded_by = UUID(str(uploaded_by).strip())
+            parsed_uploaded_by = UUID(uploaded_by.strip())
         except ValueError:
             parsed_uploaded_by = None
 

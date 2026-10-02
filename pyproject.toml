@@ -27,8 +27,6 @@ dependencies = [
     "typesense>=2.0.0",
     "uvicorn[standard]>=0.53.0",
 ]
-[project.scripts]
-dev = "uvicorn.app:app"
 [tool.pyright]
 # Forces IntelliSense to recognize modules from the base project root directory
 extraPaths = ["."]

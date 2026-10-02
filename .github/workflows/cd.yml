@@ -1,0 +1,49 @@
+name: Deploy the backend
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/documon-be:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/documon-be:latest
+          build-args: |
+            MODEL=${{ secrets.MODEL }}
+            GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+            HF_TOKEN=${{ secrets.HF_TOKEN }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            DATABASE_URL_UNPOOLED=${{ secrets.DATABASE_URL_UNPOOLED }}
+            AWS_ENDPOINT_URL_S3=${{ secrets.AWS_ENDPOINT_URL_S3 }}
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            S3_BUCKET=${{ secrets.S3_BUCKET }}
+            PGHOST=${{ secrets.PGHOST }}
+            PGDATABASE=${{ secrets.PGDATABASE }}
+            PGUSER=${{ secrets.PGUSER }}
+            PGPASSWORD=${{ secrets.PGPASSWORD }}
+            PGSSLMODE=${{ secrets.PGSSLMODE }}
+            PGCHANNELBINDING=${{ secrets.PGCHANNELBINDING }}
+
+      # - name: Trigger Render Deploy Hook
+      #   run: |
+      #     curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+

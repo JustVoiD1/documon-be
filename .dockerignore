@@ -1,0 +1,46 @@
+# Git & Version Control
+.git
+.gitignore
+.github
+.pytest_cache/
+
+# Virtual Environments
+.venv
+venv/
+ENV/
+env/
+
+# Python Cache & Bytecode
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Secrets & Environment Configuration
+.env
+.env.*
+!.env.example
+
+# Jupyter Notebooks & Scratch Files
+.ipynb_checkpoints
+notebook.ipynb
+README.md
+
+# Local Document Downloads & Temp Storage
+documents/
+tmp/
+temp/
+
+# IDE & OS Files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Build Logs
+*.log
+
+
+
