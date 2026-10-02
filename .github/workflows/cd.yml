@@ -44,7 +44,7 @@ jobs:
             PGCHANNELBINDING=${{ secrets.PGCHANNELBINDING }}
             PORT=${{ secrets.PORT }}
 
-      # - name: Trigger Render Deploy Hook
-      #   run: |
-      #     curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+      - name: Trigger Render Deploy Hook
+        run: |
+          curl -X POST "${{ secrets.RENDER_HTTP_DEPLOY_HOOK }}"
 

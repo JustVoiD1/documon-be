@@ -77,4 +77,4 @@ COPY . .
 EXPOSE 8000
 
 # Run Uvicorn server
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "$PORT"]
+CMD uvicorn app:app --host 0.0.0.0 --port ${PORT}
