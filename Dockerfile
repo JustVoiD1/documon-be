@@ -30,6 +30,7 @@ ARG PGPASSWORD
 ARG PGSSLMODE
 ARG PGCHANNELBINDING
 
+ARG PORT
 # Set them as ENV variables so application process can read them
 
 ENV MODEL=$MODEL
@@ -51,7 +52,7 @@ ENV PGUSER=$PGUSER
 ENV PGPASSWORD=$PGPASSWORD
 ENV PGSSLMODE=$PGSSLMODE
 ENV PGCHANNELBINDING=$PGCHANNELBINDING
-
+ENV PORT=$PORT
 
 # Install necessary system dependencies for building C extensions / PostgreSQL
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -76,4 +77,4 @@ COPY . .
 EXPOSE 8000
 
 # Run Uvicorn server
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "$PORT"]

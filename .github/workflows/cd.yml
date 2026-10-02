@@ -42,6 +42,7 @@ jobs:
             PGPASSWORD=${{ secrets.PGPASSWORD }}
             PGSSLMODE=${{ secrets.PGSSLMODE }}
             PGCHANNELBINDING=${{ secrets.PGCHANNELBINDING }}
+            PORT=${{ secrets.PORT }}
 
       # - name: Trigger Render Deploy Hook
       #   run: |
