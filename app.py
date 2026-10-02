@@ -1,3 +1,4 @@
+from datetime import datetime
 import math
 from fastapi import Header
 import io
@@ -89,10 +90,16 @@ class SearchResponse(BaseModel):
     success: bool = True
     query: str
     results: List[SearchResultItem]
-
+class DocumentResponse(BaseModel):
+    id: UUID
+    name: str
+    doc_type: str
+    download_url: str
+    
 class DocumentUploadResponse(BaseModel):
     success: bool = True
     message: str
+    document: DocumentResponse
 
 
 try:
@@ -262,14 +269,12 @@ async def upload_document(
     return DocumentUploadResponse(
         success=True,
         message=f"Successfully uploaded '{filename}' to bucket and ingested {chunks_count} document segment(s).",
-        id=doc_id,
-        name=filename,
-        doc_type=doc_type,
-        download_url=download_url,
-        chat_id=parsed_chat_id,
-        uploaded_by=parsed_uploaded_by,
-        folder=subfolder,
-        chunks_ingested=chunks_count,
+        document={
+            "id": str(doc_id),
+            "name": filename,
+            "doc_type": doc_type,
+            "download_url": download_url,
+        }
     )
 
 

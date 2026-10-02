@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     # All these are required strings. If missing, Pydantic throws a clean ValidationError.
     MODEL: str
+    HF_TOKEN: str
     GROQ_API_KEY: str
     DATABASE_URL: str
     
