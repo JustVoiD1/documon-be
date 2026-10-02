@@ -1,5 +1,7 @@
 from datetime import datetime
 import math
+import uvicorn
+
 from fastapi import Header
 import io
 from pathlib import Path
@@ -277,6 +279,9 @@ async def upload_document(
         }
     )
 
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=settings.PORT)
 
 
 

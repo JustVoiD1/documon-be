@@ -29,5 +29,7 @@ class Settings(BaseSettings):
     AWS_REGION: str
     S3_BUCKET: str
 
+    PORT: int
+
 # Instantiate immediately on import
 settings = Settings()
