@@ -1,0 +1,47 @@
+version: 1
+services:
+  - type: web
+    name: documon-be
+    runtime: image
+    image:
+      url: docker.io/justvoid1/documon-be:latest
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8000
+        
+      - key: MODEL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: HF_TOKEN
+        sync: false
+
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+
+      - key: AWS_ENDPOINT_URL_S3
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+
+      - key: PGHOST
+        sync: false
+      - key: PGDATABASE
+        sync: false
+      - key: PGUSER
+        sync: false
+      - key: PGPASSWORD
+        sync: false
+      - key: PGSSLMODE
+        sync: false
+      - key: PGCHANNELBINDING
+        sync: false
