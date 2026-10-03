@@ -158,7 +158,7 @@ async def search_endpoint(
 ):
     """
     **Raw Search Endpoint:** Returns pure semantic context matches, vector scores, 
-    and document chunks from the FAISS database without calling the LLM.
+    and document chunks from the database without calling the LLM.
     """
     if not rag_coordinator:
         raise HTTPException(status_code=500, detail="Search engine database is unavailable.")
@@ -279,9 +279,6 @@ async def upload_document(
         }
     )
 
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=settings.PORT)
 
 
 

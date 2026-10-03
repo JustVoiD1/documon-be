@@ -76,5 +76,6 @@ COPY . .
 # Expose FastAPI application port
 EXPOSE 8000
 
-# Run Uvicorn server
-CMD uvicorn app:app --host 0.0.0.0 --port ${PORT}
+# Run Uvicorn server, binding dynamically to $PORT provided by Render (defaulting to 8000)
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]
+

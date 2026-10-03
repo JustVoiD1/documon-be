@@ -6,9 +6,11 @@ services:
     image:
       url: docker.io/justvoid1/documon-be:latest
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: PORT
         value: 8000
+
         
       - key: MODEL
         sync: false

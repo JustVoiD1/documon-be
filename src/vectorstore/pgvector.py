@@ -21,12 +21,17 @@ class SearchResultItem(TypedDict):
 class PgVectorStore:
     def __init__(self, embedding_model: str = "all-MiniLM-L6-v2", chunk_size: int = 1000, chunk_overlap: int = 200):
         self.embedding_model = embedding_model
-        self.model = SentenceTransformer(embedding_model)
-
+        self._model = None
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
-        print(f"[INFO] Loaded embedding model: {embedding_model}")
+    @property
+    def model(self):
+        if self._model is None:
+            print(f"[INFO] Lazily loading embedding model: {self.embedding_model}")
+            self._model = SentenceTransformer(self.embedding_model)
+        return self._model
+
 
     def init_tables(self):
         """Creates 'documents' and 'document_chunks' tables in PostgreSQL if they do not exist."""
