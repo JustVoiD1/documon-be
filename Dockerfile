@@ -30,7 +30,6 @@ ARG PGPASSWORD
 ARG PGSSLMODE
 ARG PGCHANNELBINDING
 
-ARG PORT
 # Set them as ENV variables so application process can read them
 
 ENV MODEL=$MODEL
@@ -52,7 +51,7 @@ ENV PGUSER=$PGUSER
 ENV PGPASSWORD=$PGPASSWORD
 ENV PGSSLMODE=$PGSSLMODE
 ENV PGCHANNELBINDING=$PGCHANNELBINDING
-ENV PORT=$PORT
+
 
 # Install necessary system dependencies for building C extensions / PostgreSQL
 RUN apt-get update && apt-get install -y --no-install-recommends \

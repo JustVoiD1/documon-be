@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     AWS_REGION: str
     S3_BUCKET: str
 
-    PORT: int
+    PORT: int = 8000
 
 # Instantiate immediately on import
 settings = Settings()
