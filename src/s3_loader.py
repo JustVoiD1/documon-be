@@ -1,3 +1,4 @@
+from uuid import UUID
 import os
 from pathlib import Path
 from typing import List, Optional, TypedDict
@@ -99,7 +100,7 @@ class S3DataLoader:
 
         print(f"[INFO] Uploading file '{local_path}' to s3://{self.bucket_name}/{key}")
         self.s3_client.upload_file(
-            Filename=str(local_path),
+            Filename=local_path,
             Bucket=self.bucket_name,
             Key=key,
             ExtraArgs=extra_args if extra_args else None,
@@ -172,3 +173,33 @@ class S3DataLoader:
         documents = loader.load_all_documents()
         return documents
 
+    def delete_documents_by_chat_id(self, chat_id: UUID) -> None:
+        """
+        Delete all documents belonging to a chat from S3.
+
+        Objects are stored as:
+            {chat_id}/{file_type}/{filename}
+        """
+        prefix = f"{chat_id}/"
+
+        response = self.s3_client.list_objects_v2(
+            Bucket=self.bucket_name,
+            Prefix=prefix,
+        )
+
+        objects = response.get("Contents", [])
+
+        if not objects:
+            return
+
+        self.s3_client.delete_objects(
+            Bucket=self.bucket_name,
+            Delete={
+                "Objects": [
+                    {"Key": obj["Key"]}
+                    for obj in objects
+                ]
+            }
+        )
+
+        print(f"[INFO] Deleted {len(objects)} documents from S3 bucket '{self.bucket_name}' belonging to chat '{chat_id}'.")

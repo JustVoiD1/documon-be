@@ -77,6 +77,8 @@ class QueryRequest(BaseModel):
     chat_id: str = Field(description="Chat session UUID to scope document context search")
     top_k: int = Field(default=3, ge=1, le=10)
 
+class DeleteDocumentRequest(BaseModel):
+    chat_id: str = Field(description="Chat session UUID to delete documents from")
 
 class QueryResponse(BaseModel):
     success: bool = True
@@ -103,6 +105,10 @@ class DocumentUploadResponse(BaseModel):
     message: str
     document: DocumentResponse
 
+
+class DocumentDeleteResponse(BaseModel):
+    success: bool = True
+    message: str
 
 try:
     rag_coordinator = RAGSearch(
@@ -278,6 +284,28 @@ async def upload_document(
             "download_url": download_url,
         }
     )
+    
+@app.delete("/api/documents", response_model=DocumentDeleteResponse)
+async def delete_chat_documents(req: DeleteDocumentRequest):
+    """
+    **Document Delete Endpoint:**
+    Deletes documents from S3.
+    """
+    
+
+    chat_id = UUID(req.chat_id)
+    s3_loader = S3DataLoader()
+    s3_loader.delete_documents_by_chat_id(chat_id)
+    return DocumentDeleteResponse(
+        success=True,
+        message=f"Documents in chat: {chat_id} deleted successfully"
+    )
+
+
+
+
+
+    
 
 
 
