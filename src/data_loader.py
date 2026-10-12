@@ -7,6 +7,7 @@ from langchain_community.document_loaders import UnstructuredWordDocumentLoader
 from langchain_community.document_loaders.excel import UnstructuredExcelLoader
 from langchain_community.document_loaders import JSONLoader
 from langchain_core.documents import Document
+from src.sanitizer import clean_document
 
 class DataLoader:
     def __init__(self, data_dir: str):
@@ -26,7 +27,7 @@ class DataLoader:
             print(f"[DEBUG] Loading PDF: {pdf_file}")
             try:
                 loader = PyMuPDFLoader(str(pdf_file))
-                loaded = loader.load()
+                loaded = [clean_document(d) for d in loader.load()]
                 print(f"[DEBUG] Loaded {len(loaded)} PDF docs from {pdf_file}")
                 self.documents.extend(loaded)
             except Exception as e:
@@ -38,7 +39,7 @@ class DataLoader:
             print(f"[DEBUG] Loading TXT: {txt_file}")
             try:
                 loader = TextLoader(str(txt_file))
-                loaded = loader.load()
+                loaded = [clean_document(d) for d in loader.load()]
                 print(f"[DEBUG] Loaded {len(loaded)} TXT docs from {txt_file}")
                 self.documents.extend(loaded)
             except Exception as e:
@@ -51,7 +52,7 @@ class DataLoader:
             print(f"[DEBUG] Loading CSV: {csv_file}")
             try:
                 loader = CSVLoader(str(csv_file))
-                loaded = loader.load()
+                loaded = [clean_document(d) for d in loader.load()]
                 print(f"[DEBUG] Loaded {len(loaded)} CSV docs from {csv_file}")
                 self.documents.extend(loaded)
             except Exception as e:
@@ -63,7 +64,7 @@ class DataLoader:
             print(f"[DEBUG] Loading Excel: {xlsx_file}")
             try:
                 loader = UnstructuredExcelLoader(str(xlsx_file))
-                loaded = loader.load()
+                loaded = [clean_document(d) for d in loader.load()]
                 print(f"[DEBUG] Loaded {len(loaded)} Excel docs from {xlsx_file}")
                 self.documents.extend(loaded)
             except Exception as e:
@@ -75,7 +76,7 @@ class DataLoader:
             print(f"[DEBUG] Loading Word: {docx_file}")
             try:
                 loader = UnstructuredWordDocumentLoader(str(docx_file))
-                loaded = loader.load()
+                loaded = [clean_document(d) for d in loader.load()]
                 print(f"[DEBUG] Loaded {len(loaded)} Word docs from {docx_file}")
                 self.documents.extend(loaded)
             except Exception as e:
@@ -87,13 +88,11 @@ class DataLoader:
             print(f"[DEBUG] Loading JSON: {json_file}")
             try:
                 loader = JSONLoader(file_path=str(json_file), jq_schema=".", text_content=False)
-                loaded = loader.load()
+                loaded = [clean_document(d) for d in loader.load()]
                 print(f"[DEBUG] Loaded {len(loaded)} JSON docs from {json_file}")
                 self.documents.extend(loaded)
             except Exception as e:
                 print(f"[ERROR] Failed to load JSON {json_file}: {e}")
-
-    
 
     def load_single_file(self, file_path: Path) -> List[Document]:
         """
@@ -106,20 +105,21 @@ class DataLoader:
         print(f"[DEBUG] Loading file: {file_path}")
         try:
             if ext == ".pdf":
-                return PyMuPDFLoader(file_str).load()
+                raw_docs = PyMuPDFLoader(file_str).load()
             elif ext == ".txt":
-                return TextLoader(file_str).load()
+                raw_docs = TextLoader(file_str).load()
             elif ext == ".csv":
-                return CSVLoader(file_str).load()
+                raw_docs = CSVLoader(file_str).load()
             elif ext in [".xlsx", ".xls"]:
-                return UnstructuredExcelLoader(file_str).load()
+                raw_docs = UnstructuredExcelLoader(file_str).load()
             elif ext in [".docx", ".doc"]:
-                return UnstructuredWordDocumentLoader(file_str).load()
+                raw_docs = UnstructuredWordDocumentLoader(file_str).load()
             elif ext == ".json":
-                return JSONLoader(file_path=file_str, jq_schema=".", text_content=False).load()
+                raw_docs = JSONLoader(file_path=file_str, jq_schema=".", text_content=False).load()
             else:
                 print(f"[WARN] Unsupported file extension: {ext}")
                 return []
+            return [clean_document(doc) for doc in raw_docs]
         except Exception as e:
             print(f"[ERROR] Failed to load file {file_path}: {e}")
             return []
@@ -139,7 +139,7 @@ class DataLoader:
             for doc in docs:
                 if isinstance(doc.metadata, dict) and "source" in doc.metadata:
                     doc.metadata["source"] = filename
-            return docs
+            return [clean_document(doc) for doc in docs]
         finally:
             if tmp_path.exists():
                 try:

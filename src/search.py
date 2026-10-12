@@ -1,6 +1,10 @@
+from src.db.postgres import get_connection
+from langchain_core.messages import BaseMessage
+from typing import List, Dict, Any
 import os
 from env import settings
 from dotenv import load_dotenv
+from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_groq import ChatGroq
 from typing import Any
 from src.vectorstore.pgvector import PgVectorStore
@@ -12,6 +16,32 @@ load_dotenv()
 
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["HF_TOKEN"] = settings.HF_TOKEN
+
+
+def get_chat_history_from_db(chat_id: UUID, limit: int = 10) -> List[Dict[str, str]]:
+    """
+    Fetches the most recent `limit` messages for the given chat_id from PostgreSQL,
+    returned in chronological order (oldest to newest).
+    """
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT role, content
+                    FROM messages
+                    WHERE chat_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT %s
+                    """,
+                    (chat_id, limit),
+                )
+                rows = cur.fetchall()
+        return [{"role": str(row[0]), "content": str(row[1])} for row in reversed(rows)]
+    except Exception as e:
+        print(f"[WARN] Failed to fetch message history from DB for chat {chat_id}: {e}")
+        return []
+
 
 class RAGSearch:
     def __init__(self, embedding_model: str = "all-MiniLM-L6-v2", llm_model: str = settings.MODEL):
@@ -30,61 +60,58 @@ class RAGSearch:
         results = self.vectorstore.query(query_text=query, chat_id=chat_id, top_k=top_k)
         texts = [r["content"] for r in results if r.get("content")]
         context = "\n\n".join(texts)
-        if not context:
-            return "No relevant documents found."
-        instructions = """
-You are a document question-answering assistant.
 
-Your task is to answer the user's question using ONLY the information
-contained in the provided document context.
+        history = get_chat_history_from_db(chat_id=chat_id, limit=10)
+        print("[INFO] Chat History: \n\n", history)
 
-RULES:
+        # If the last message in history is the exact current user query, avoid duplicating it
+        if (
+            history
+            and history[-1].get("role") in ("user", "human")
+            and history[-1].get("content", "").strip() == query.strip()
+        ):
+            history = history[:-1]
 
-1. CONTEXT-ONLY
-   Use only information explicitly stated in the provided context.
-   Do not use your general knowledge, training data, assumptions,
-   or information from outside the documents.
+        # Keep within the sliding context window
+        if len(history) > 10:
+            history = history[-10:]
 
-2. ANSWERABILITY
-   Before answering, determine whether the provided context contains
-   enough relevant information to answer the question.
+        # 3. Construct system instruction
+        system_instruction = (
+            "You are Documon, an AI assistant specialized in answering questions based on the provided documents and conversation context.\n\n"
+            "Guidelines:\n"
+            "1. Conversation History: You have access to previous messages in this conversation. Use them to understand context, follow-ups, clarifications, and questions referring to past exchanges.\n"
+            "2. Document Grounding: For factual questions about the documents, base your answers on the provided Document Context. Do not hallucinate facts outside the provided documents or conversation.\n"
+            "3. If the user asks about previous messages (e.g., 'what was my last question?', 'summarize what you just said'), answer directly using the conversation history.\n"
+            "4. If a question is specifically about the documents, but neither the Document Context nor the conversation history contains the answer, respond with:\n"
+            "\"I cannot find the answer to that question in the uploaded documents.\""
+        )
 
-   If the context does not contain enough information to answer the
-   question, respond EXACTLY with:
-   "I cannot find the answer to that question in the uploaded documents."
+        messages: List[BaseMessage] = [SystemMessage(content=system_instruction)]
 
-3. NO HALLUCINATION
-   Never invent facts, numbers, names, dates, explanations, or conclusions
-   that are not supported by the context.
+        # 4. Append historical turns into the context window
+        for msg in history:
+            role = (msg.get("role") or "").lower()
+            content = msg.get("content") or ""
+            if not content:
+                continue
+            if role in ("user", "human"):
+                messages.append(HumanMessage(content=content))
+            elif role in ("assistant", "ai"):
+                messages.append(AIMessage(content=content))
+            elif role == "system":
+                messages.append(SystemMessage(content=content))
 
-4. RELEVANCE
-   Use only the parts of the context that are relevant to the question.
-   Do not summarize or discuss unrelated parts of the documents.
+        # 5. Append current turn with document context
+        if context:
+            user_prompt = f"Document Context:\n{context}\n\nUser Question: {query}"
+        else:
+            user_prompt = f"User Question: {query}"
 
-5. REASONING
-   You may combine information from multiple parts of the context when
-   necessary to answer the question, but every part of the answer must
-   be supported by the provided context.
+        messages.append(HumanMessage(content=user_prompt))
 
-6. UNCERTAINTY
-   If the context provides incomplete or ambiguous information, clearly
-   state what can and cannot be determined from the documents.
-
-7. DIRECTNESS
-   Answer the question directly and concisely. Do not add unnecessary
-   background information.
-
-8. GREETINGS
-   If the user sends a normal greeting such as "hello" or "hi", respond
-   naturally without requiring document context.
-"""
-
-        prompt = f"""{instructions}
-        
-        Context: {context}
-        
-        Query: '{query}'"""
-        response = self.llm.invoke([prompt])
+        # 6. Invoke LLM
+        response = self.llm.invoke(messages)
         return response.content
 
 # Example usage

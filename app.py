@@ -196,7 +196,7 @@ async def search_endpoint(
         raise HTTPException(status_code=500, detail=f"Vector store search failed: {str(e)}")
 
 @app.post("/api/documents/upload", response_model=DocumentUploadResponse)
-async def upload_document(
+async def document_upload_endpoint(
     file: UploadFile = File(...),
     chat_id: Optional[str] = Form(None),
     uploaded_by: Optional[str] = Form(None)
@@ -253,8 +253,9 @@ async def upload_document(
     # 2. Record document metadata in PostgreSQL & parse/ingest directly from memory bytes
     doc_id = uuid4()
     chunks_count = 0
+    pg_store = PgVectorStore(embedding_model="all-MiniLM-L6-v2")
     try:
-        pg_store = PgVectorStore(embedding_model="all-MiniLM-L6-v2")
+
         pg_store.create_document(
             document_id=doc_id,
             name=filename,
@@ -268,10 +269,13 @@ async def upload_document(
         parsed_docs = data_loader.load_from_bytes(file_bytes=file_bytes, filename=filename)
 
         if parsed_docs:
-            pg_store.build_from_documents(documents=parsed_docs, document_id=doc_id)
-            chunks_count = len(parsed_docs)
+            chunks_count = pg_store.build_from_documents(documents=parsed_docs, document_id=doc_id)
     except Exception as db_err:
         print(f"[ERROR] Ingestion / DB update failed: {db_err}")
+        try:
+            pg_store.delete_document(doc_id)
+        except Exception as cleanup_err:
+            print(f"[WARN] Failed to clean up orphaned document record {doc_id}: {cleanup_err}")
         raise HTTPException(status_code=500, detail=f"Document storage or vector ingestion failed: {str(db_err)}")
 
     return DocumentUploadResponse(
@@ -286,7 +290,7 @@ async def upload_document(
     )
     
 @app.delete("/api/documents", response_model=DocumentDeleteResponse)
-async def delete_chat_documents(req: DeleteDocumentRequest):
+async def document_delete_endpoint(req: DeleteDocumentRequest):
     """
     **Document Delete Endpoint:**
     Deletes documents from S3.

@@ -8,6 +8,7 @@ from pgvector.psycopg2 import register_vector
 from psycopg2.extras import register_uuid, Json
 from sentence_transformers import SentenceTransformer
 from src.embedding import EmbeddingPipeline
+from src.sanitizer import sanitize_metadata, sanitize_text
 
 class SearchResultItem(TypedDict):
     id: str  # or int / uuid.UUID depending on your DB schema
@@ -74,6 +75,9 @@ class PgVectorStore:
     ):
         """Inserts a new document record into the 'documents' table prior to chunking."""
         self.init_tables()
+        clean_name = sanitize_text(name) if name else None
+        clean_doc_type = sanitize_text(doc_type) if doc_type else None
+        clean_download_url = sanitize_text(download_url) if download_url else None
         with get_connection() as conn:
             register_uuid(conn)
             with conn.cursor() as cur:
@@ -82,12 +86,21 @@ class PgVectorStore:
                     INSERT INTO documents (id, name, doc_type, download_url, chat_id, uploaded_by, created_at)
                     VALUES (%s, %s, %s, %s, %s, %s, NOW())
                     """,
-                    (document_id, name, doc_type, download_url, chat_id, uploaded_by),
+                    (document_id, clean_name, clean_doc_type, clean_download_url, chat_id, uploaded_by),
                 )
             conn.commit()
-        print(f"[INFO] Inserted document record into 'documents' table: {document_id} (name: {name}, type: {doc_type})")
+        print(f"[INFO] Inserted document record into 'documents' table: {document_id} (name: {clean_name}, type: {clean_doc_type})")
 
-    def build_from_documents(self, documents: List[Document], document_id: UUID):
+    def delete_document(self, document_id: UUID):
+        """Deletes a document record and its cascading chunks from PostgreSQL."""
+        with get_connection() as conn:
+            register_uuid(conn)
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM documents WHERE id = %s", (document_id,))
+            conn.commit()
+        print(f"[INFO] Deleted document {document_id} and its associated chunks from database.")
+
+    def build_from_documents(self, documents: List[Document], document_id: UUID) -> int:
         print(f"[INFO] Building vector store from {len(documents)} raw documents...")
         emb_pipe = EmbeddingPipeline(
             model_name=self.embedding_model, 
@@ -103,6 +116,7 @@ class PgVectorStore:
             document_id
         )
         print(f"[INFO] Vector store built and {len(chunks)} embeddings saved to PostgresDB")
+        return len(chunks)
     
 
     def add_embeddings(
@@ -121,8 +135,9 @@ class PgVectorStore:
                         "metadata",
                         {}
                     )
-
-                    page_number = metadata.get("page")
+                    clean_meta = sanitize_metadata(metadata)
+                    page_number = clean_meta.get("page")
+                    clean_content = sanitize_text(getattr(chunk, "page_content", ""))
 
                     curr.execute(
                         """
@@ -151,9 +166,9 @@ class PgVectorStore:
                             uuid4(),
                             document_id,
                             index,
-                            chunk.page_content,
+                            clean_content,
                             embedding,
-                            Json(metadata),
+                            Json(clean_meta),
                             page_number,
                         ),
                     )
