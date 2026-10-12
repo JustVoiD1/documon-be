@@ -136,6 +136,7 @@ async def query_endpoint(req: QueryRequest):
     to generate a clean, coherent natural language answer summary.
     """
     if not rag_coordinator:
+        print(f"[ERROR] Search engine database is unavailable.")
         raise HTTPException(status_code=500, detail="Search engine database is unavailable.")
     
     parsed_chat_id = UUID(req.chat_id)
@@ -153,6 +154,7 @@ async def query_endpoint(req: QueryRequest):
             query=req.query
         )
     except Exception as e:
+        print(f"[ERROR] LLM compilation generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"LLM compilation generation failed: {str(e)}")
 
 

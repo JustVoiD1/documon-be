@@ -62,7 +62,7 @@ class RAGSearch:
         context = "\n\n".join(texts)
 
         history = get_chat_history_from_db(chat_id=chat_id, limit=10)
-        print("[INFO] Chat History: \n\n", history)
+        # print("[INFO] Chat History: \n", history)
 
         # If the last message in history is the exact current user query, avoid duplicating it
         if (
