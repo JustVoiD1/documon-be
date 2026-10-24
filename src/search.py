@@ -44,8 +44,8 @@ def get_chat_history_from_db(chat_id: UUID, limit: int = 10) -> List[Dict[str, s
 
 
 class RAGSearch:
-    def __init__(self, embedding_model: str = "all-MiniLM-L6-v2", llm_model: str = settings.MODEL):
-        self.vectorstore = PgVectorStore(embedding_model)
+    def __init__(self, model_name: str = "GPTCache/paraphrase-albert-onnx", llm_model: str = settings.MODEL):
+        self.vectorstore = PgVectorStore(model_name)
         self.llm = ChatGroq(
             model=llm_model,
             temperature=0.05,

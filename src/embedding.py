@@ -1,14 +1,13 @@
 from langchain_core.documents import Document
 from typing import List, Any
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sentence_transformers import SentenceTransformer
-import numpy as np
+from pymilvus import model as embedding_model
 
 class EmbeddingPipeline:
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2", chunk_size: int = 1000, chunk_overlap: int = 200):
+    def __init__(self,  model_name: str = 'GPTCache/paraphrase-albert-onnx', chunk_size: int = 1000, chunk_overlap: int = 200):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        self.model = SentenceTransformer(model_name)
+        self.model = embedding_model.DefaultEmbeddingFunction(model_name)
         print(f"[INFO] Loaded embedding model: {model_name}")
 
     def chunk_documents(self, documents: List[Any]) -> List[Document]:
@@ -22,11 +21,11 @@ class EmbeddingPipeline:
         print(f"[INFO] Split {len(documents)} documents into {len(chunks)} chunks.")
         return chunks
 
-    def embed_chunks(self, chunks: List[Document]) -> np.ndarray:
+    def embed_chunks(self, chunks: List[Document]) -> list[float]:
         texts = [chunk.page_content for chunk in chunks]
         print(f"[INFO] Generating embeddings for {len(texts)} chunks...")
-        embeddings = self.model.encode(texts, show_progress_bar=True)
-        print(f"[INFO] Embeddings shape: {embeddings.shape}")
+        embeddings = self.model.encode_documents(texts)
+        print(f"[INFO] Embeddings shape: {embeddings[0].shape}")
         return embeddings
 
 # Example usage

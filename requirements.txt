@@ -3,7 +3,6 @@ langchain-core
 langchain-community
 pypdf
 pymupdf
-sentence-transformers
 langchain-text-splitters
 langchain-groq
 langchain-google-genai
@@ -22,3 +21,4 @@ pgvector
 python-multipart
 
 tavily-python
+pymilvus[model]

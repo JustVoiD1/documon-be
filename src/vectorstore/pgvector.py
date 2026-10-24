@@ -6,9 +6,9 @@ from typing import List, Any
 from uuid import UUID, uuid4
 from pgvector.psycopg2 import register_vector
 from psycopg2.extras import register_uuid, Json
-from sentence_transformers import SentenceTransformer
 from src.embedding import EmbeddingPipeline
 from src.sanitizer import sanitize_metadata, sanitize_text
+from pymilvus import model as embedding_model
 
 class SearchResultItem(TypedDict):
     id: str  # or int / uuid.UUID depending on your DB schema
@@ -20,8 +20,8 @@ class SearchResultItem(TypedDict):
     distance: float
 
 class PgVectorStore:
-    def __init__(self, embedding_model: str = "all-MiniLM-L6-v2", chunk_size: int = 1000, chunk_overlap: int = 200):
-        self.embedding_model = embedding_model
+    def __init__(self, model_name: str = 'GPTCache/paraphrase-albert-onnx', chunk_size: int = 1000, chunk_overlap: int = 200):
+        self.model_name = model_name
         self._model = None
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
@@ -29,8 +29,8 @@ class PgVectorStore:
     @property
     def model(self):
         if self._model is None:
-            print(f"[INFO] Lazily loading embedding model: {self.embedding_model}")
-            self._model = SentenceTransformer(self.embedding_model)
+            print(f"[INFO] Lazily loading embedding model: {self.model_name}")
+            self._model = embedding_model.DefaultEmbeddingFunction(self.model_name)
         return self._model
 
 
@@ -56,7 +56,7 @@ class PgVectorStore:
                         document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
                         chunk_index INT,
                         content TEXT,
-                        embedding vector(384),
+                        embedding vector(768),
                         metadata JSONB,
                         page_number INT
                     );
@@ -118,7 +118,7 @@ class PgVectorStore:
     def build_from_documents(self, documents: List[Document], document_id: UUID) -> int:
         print(f"[INFO] Building vector store from {len(documents)} raw documents...")
         emb_pipe = EmbeddingPipeline(
-            model_name=self.embedding_model, 
+            model_name=self.model_name, 
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap
         )
@@ -254,7 +254,7 @@ class PgVectorStore:
             f"[INFO] Querying vector store: '{query_text}' (chat_id: {chat_id})"
         )
 
-        query_embedding = self.model.encode(
+        query_embedding = self.model.encode_queries(
             [query_text]
         )[0]
 

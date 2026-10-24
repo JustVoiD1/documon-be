@@ -114,7 +114,7 @@ class DocumentDeleteResponse(BaseModel):
 
 try:
     rag_coordinator = RAGSearch(
-        embedding_model="sentence-transformers/all-MiniLM-L6-v2",
+        model_name="GPTCache/paraphrase-albert-onnx",
         llm_model=settings.MODEL
     )
 except Exception as e:
@@ -259,7 +259,7 @@ async def document_upload_endpoint(
 
     # 2. Record document metadata in PostgreSQL & parse/ingest directly from memory bytes
     chunks_count = 0
-    pg_store = PgVectorStore(embedding_model="all-MiniLM-L6-v2")
+    pg_store = PgVectorStore()
     try:
 
         pg_store.create_document(
