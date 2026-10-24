@@ -31,5 +31,7 @@ class Settings(BaseSettings):
 
     PORT: int = 8000
 
+    TAVILY_API_KEY: str
+
 # Instantiate immediately on import
 settings = Settings()

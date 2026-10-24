@@ -19,7 +19,7 @@ from src.s3_loader import S3DataLoader, FOLDER_MAPPING
 from src.data_loader import DataLoader
 from src.vectorstore.pgvector import PgVectorStore
 
-app = FastAPI(title="DocuMon", description="DocuMon API", version="1.0.0")
+app = FastAPI(title="Smriti", description="Smriti API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -79,6 +79,8 @@ class QueryRequest(BaseModel):
 
 class DeleteDocumentRequest(BaseModel):
     chat_id: str = Field(description="Chat session UUID to delete documents from")
+    document_id: str = Field(description="Document UUID to delete")
+    doc_type: str = Field(description="Type of the document")
 
 class QueryResponse(BaseModel):
     success: bool = True
@@ -208,6 +210,8 @@ async def document_upload_endpoint(
     Uploads a file directly to the S3 bucket under the mapped subfolder, records document metadata
     in PostgreSQL, and parses/ingests document text in-memory without persistent local storage.
     """
+
+    # store them as bucket_name/chat_id/doc_id.extension
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file filename provided.")
 
@@ -229,9 +233,10 @@ async def document_upload_endpoint(
         except ValueError:
             parsed_uploaded_by = None
 
-    mapped_folder = FOLDER_MAPPING.get(ext, (doc_type + "s") if doc_type != "unknown" else "others")
-    subfolder = f"{parsed_chat_id}/{mapped_folder}" if parsed_chat_id else mapped_folder
+    extension_folder = FOLDER_MAPPING.get(ext, (doc_type + "s") if doc_type != "unknown" else "others")
+    subfolder = f"{parsed_chat_id}/{extension_folder}" if parsed_chat_id else extension_folder
 
+    doc_id = uuid4()
 
     # Read uploaded file bytes into memory
     try:
@@ -240,7 +245,7 @@ async def document_upload_endpoint(
         raise HTTPException(status_code=400, detail=f"Failed to read uploaded file: {str(e)}")
 
     # 1. Upload file stream directly to S3 object storage
-    s3_key = f"{subfolder}/{filename}"
+    s3_key = f"{subfolder}/{doc_id}{ext}"
     try:
         s3_loader = S3DataLoader()
         download_url = s3_loader.upload_fileobj(
@@ -250,10 +255,9 @@ async def document_upload_endpoint(
         )
     except Exception as s3_err:
         print(f"[WARN] S3 Upload failed/bypassed: {s3_err}")
-        download_url = f"/documents/{subfolder}/{filename}"
+        download_url = f"/documents/{subfolder}/{doc_id}{ext}"
 
     # 2. Record document metadata in PostgreSQL & parse/ingest directly from memory bytes
-    doc_id = uuid4()
     chunks_count = 0
     pg_store = PgVectorStore(embedding_model="all-MiniLM-L6-v2")
     try:
@@ -291,20 +295,47 @@ async def document_upload_endpoint(
         }
     )
     
-@app.delete("/api/documents", response_model=DocumentDeleteResponse)
-async def document_delete_endpoint(req: DeleteDocumentRequest):
+@app.delete("/api/chat/{chat_id}/documents", response_model=DocumentDeleteResponse)
+async def document_delete_all_endpoint(chat_id: UUID):
     """
     **Document Delete Endpoint:**
     Deletes documents from S3.
     """
     
 
-    chat_id = UUID(req.chat_id)
     s3_loader = S3DataLoader()
     s3_loader.delete_documents_by_chat_id(chat_id)
     return DocumentDeleteResponse(
         success=True,
         message=f"Documents in chat: {chat_id} deleted successfully"
+    )
+
+@app.delete("/api/chat/documents", response_model=DocumentDeleteResponse)
+async def document_delete_endpoint(req: DeleteDocumentRequest):
+    """
+    **Document Delete Endpoint:**
+    Deletes documents from S3.
+    """
+    
+    try:
+        parsed_chat_id = UUID(req.chat_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid chat_id.")
+    try:
+        parsed_document_id = UUID(req.document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid document_id.")
+    parsed_doc_type = req.doc_type
+        
+
+    s3_loader = S3DataLoader()
+    pg_store = PgVectorStore()
+    s3_loader.delete_document(parsed_document_id, parsed_chat_id, parsed_doc_type)
+    pg_store.delete_document(parsed_document_id)
+
+    return DocumentDeleteResponse(
+        success=True,
+        message=f"Documents in chat: {parsed_chat_id} deleted successfully"
     )
 
 

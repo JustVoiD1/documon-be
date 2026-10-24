@@ -8,7 +8,7 @@ from fastapi import FastAPI, Query, UploadFile
 from typing import Optional, Dict, Any, List
 from pydantic import Field
 from pydantic import BaseModel
-app = FastAPI(title="DocuMon", description="DocuMon API", version="1.0.0")
+app = FastAPI(title="Smriti", description="Smriti API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

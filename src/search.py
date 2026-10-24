@@ -78,7 +78,7 @@ class RAGSearch:
 
         # 3. Construct system instruction
         system_instruction = (
-            "You are Documon, an AI assistant specialized in answering questions based on the provided documents and conversation context.\n\n"
+            "You are Smriti, which means memory, an AI assistant specialized in answering questions based on the provided documents and conversation context.\n\n"
             "Guidelines:\n"
             "1. Conversation History: You have access to previous messages in this conversation. Use them to understand context, follow-ups, clarifications, and questions referring to past exchanges.\n"
             "2. Document Grounding: For factual questions about the documents, base your answers on the provided Document Context. Do not hallucinate facts outside the provided documents or conversation.\n"

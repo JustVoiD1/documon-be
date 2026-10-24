@@ -64,6 +64,13 @@ class PgVectorStore:
             conn.commit()
         print("[INFO] PostgreSQL tables initialized.")
 
+    def get_documents_by_chat_id(self, chat_id: UUID):
+        with get_connection() as conn:
+            register_uuid(conn)
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM documents WHERE chat_id = %s", (chat_id,))
+                return cur.fetchall()
+
     def create_document(
         self,
         document_id: UUID,
@@ -90,6 +97,14 @@ class PgVectorStore:
                 )
             conn.commit()
         print(f"[INFO] Inserted document record into 'documents' table: {document_id} (name: {clean_name}, type: {clean_doc_type})")
+
+    def get_doctype_by_id(self, document_id: UUID, chat_id: UUID):
+        """Retrieves a document record from the 'documents' table by ID."""
+        with get_connection() as conn:
+            register_uuid(conn)
+            with conn.cursor() as cur:
+                cur.execute("SELECT doc_type FROM documents WHERE id = %s AND chat_id = %s", (document_id, chat_id,))
+                return cur.fetchone()
 
     def delete_document(self, document_id: UUID):
         """Deletes a document record and its cascading chunks from PostgreSQL."""

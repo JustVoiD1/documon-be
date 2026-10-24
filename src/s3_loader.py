@@ -203,3 +203,37 @@ class S3DataLoader:
         )
 
         print(f"[INFO] Deleted {len(objects)} documents from S3 bucket '{self.bucket_name}' belonging to chat '{chat_id}'.")
+
+    def delete_document(self, document_id: UUID, chat_id: UUID, doc_type: str) -> None:
+        # the file is stored as chat_id/file_type/filename.extension
+        doc_type = doc_type.lower()
+        print(f"document_id: {document_id}, chat_id: {chat_id}, doc_type: {doc_type}")
+        prefix = f"{chat_id}/"
+        # 1. List all objects under the specific chat prefix
+        response = self.s3_client.list_objects_v2(
+            Bucket=self.bucket_name,
+            Prefix=prefix,
+        )
+        print(f"[INFO] Listing objects in S3 bucket: '{self.bucket_name}'")
+        print(response)
+        
+        objects = response.get("Contents", [])
+        if not objects:
+            print(f"[INFO] No documents found under chat prefix '{prefix}'.")
+            return
+        # 2. Find the object key that ends with the target filename
+        target_key = None
+        for obj in objects:
+            key = obj["Key"]
+            # Splitting by '/' ensures we only match the actual filename at the end
+            if str(document_id) in key.split("/")[-1]:
+                target_key = key
+                break
+        if not target_key:
+            print(f"[WARNING] Document '{document_id}' not found in chat '{chat_id}'.")
+            return
+        self.s3_client.delete_object(
+            Bucket=self.bucket_name,
+            Key=target_key
+        )
+        print(f"[INFO] Deleted document '{document_id}' from S3 bucket '{self.bucket_name}'.")

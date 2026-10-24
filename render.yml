@@ -1,10 +1,10 @@
 version: 1
 services:
   - type: web
-    name: documon-be
+    name: smriti-be
     runtime: image
     image:
-      url: docker.io/justvoid1/documon-be:latest
+      url: docker.io/justvoid1/smriti-be:latest
     plan: free
     healthCheckPath: /health
     envVars:
